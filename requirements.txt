@@ -11,3 +11,4 @@ passlib
 pybase64
 pysqlite3
 requests
+psycopg2

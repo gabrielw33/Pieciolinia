@@ -1,9 +1,11 @@
+import re
 import passlib.hash as ps
 from flask import Markup
 from flask import (Flask, flash, g, redirect, render_template, request,
                    send_file, session, url_for)
 import os
-import pandas as pd 
+import psycopg2
+
 
 
 
@@ -57,42 +59,50 @@ def allowed_file(filename):
 
 
 def save_flle(name, file):
-     if 'logged' in session and session['logged'] :
-        
-        with open(f"target/{session['username']}/{name}", 'w') as f:
-            f.write(file)
+    if 'logged' in session and session['logged'] :
+        connection = get_db()
+        cursor = connection.cursor()
+        cursor.execute(f"""INSERT INTO melodis ( name, id_user, melody ) VALUES ( '{name}', (SELECT id FROM users WHERE user_name = '{session["username"]}'), '{file}');""")
+        connection.commit()
     
 
 
 def show_files():
     if 'logged' in session and session['logged'] :
-        try : 
-            return os.listdir(f"target/{session['username']}")
-        except:
+        connection = get_db()
+        cursor = connection.cursor()
+        cursor.execute(f"""SELECT name FROM melodis WHERE id_user = (SELECT id FROM users WHERE user_name = '{session["username"]}');""")
+        kursor = cursor.fetchall()
+        if kursor:
+            return [x[0] for x in kursor]
+        else:
             return []
+        
 
 
 def load_file(name):
        if 'logged' in session and session['logged'] :
         
-            with open(f"target/{session['username']}/{name}", 'r', encoding='utf8') as f:
-                composition = f.read()
-            return composition
+        connection = get_db()
+        cursor = connection.cursor()
 
-# def get_db():
-#     """Funkcja tworząca połączenie z bazą danych"""
-#     if not g.get('db'):
-#         con = sqlite3.connect(app.config['DATABASE'])
+        cursor.execute(f"""SELECT melody FROM melodis WHERE id_user = (SELECT id FROM users WHERE user_name = '{session["username"]}') and name = '{name}';""")
+        kursor = cursor.fetchall()
+        return kursor[0][0]
 
-#         con.row_factory = sqlite3.Row
-#         g.db = con
-#     return g.db
+def get_db():
+    connection = psycopg2.connect(user="jnqwggjyljzzpl",
+                                    password="395b87521bbff501cc785b4f62844c28390fd470c6d28bf41c3db01c646b0d20",
+                                    host="ec2-54-73-147-133.eu-west-1.compute.amazonaws.com",
+                                    port="5432",
+                                    database="d8jm364tnlanbh")
+    return connection
 
 
-@app.teardown_appcontext
-def close_db(error):
-    if g.get('db'):
-        g.db.close()
+# @app.teardown_appcontext
+# def close_db(error):
+#     if g.get('db'):
+#         g.db.close()
 
 
 def login_test():
@@ -109,7 +119,6 @@ def catch_all(path):
 @app.route("/")
 def strona():
     name = {}
-    print('pre')
     login_test()
     return render_template('strona.html', name=name)
 
@@ -134,23 +143,24 @@ def login():
         if login == 'root' and password == 'root':
            session['username'] = login
            session['logged'] = True
-           print('ok')
            return render_template('strona.html', error=error)
         #===========================================!
 
         enc_login = login
-        base = pd.read_csv('users.csv', sep='|')
-        # db = get_db()
-        # kursor = db.execute('SELECT * FROM users WHERE user_name = ?;',
-        #                     [enc_login])
-        # kursor = kursor.fetchone()
-        kursor = base[base['username'] == enc_login]
 
-        if base[base['username'] == enc_login].empty:
+        connection = get_db()
+        cursor = connection.cursor()
+
+        cursor.execute(f"SELECT * FROM users WHERE user_name = '{enc_login}';")
+        connection.commit()
+        kursor = cursor.fetchall()
+       
+
+        if not kursor :
             error = 'wrong login'
             return render_template('login.html', error=error)
 
-        if (savedata.passcomper(password, kursor['user_password'].values[0])):
+        if (savedata.passcomper(password, kursor[0][2])):
             session['username'] = login
             session['logged'] = True
             return redirect(url_for('strona'))
@@ -162,9 +172,6 @@ def login():
 
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-
-    
-    print(request.referrer)
     
     
     if 'logged' in session and session['logged']:
@@ -172,7 +179,7 @@ def index():
         files = show_files()
     else :
         user = 'Jesteś nie zalogowany'
-        files = "Musisz się zalogować"
+        files = ["Musisz się zalogować"]
    
     flash_message="False"
 
@@ -182,17 +189,17 @@ def index():
     
     try :
         if request.method == 'POST':
-            print( list(request.form.keys()))
             if list(request.form.keys())[0] == 'melody':
-                print( list(request.form.keys())[0])
+
                 name = request.form['filename']
                 file = request.form['melody']
-                print(name)
                 save_flle(name, file)
             elif  list(request.form.keys())[0] == 'melody_read':
                 name = request.form['r_filename']
                 flash_message = "True"
                 session['melody_content'] = Markup(load_file(name))
+            
+            
             elif  list(request.form.keys())[0] == 'return':
                 return redirect(url_for('strona'))
     except :
@@ -221,12 +228,11 @@ def reg():
         password = savedata.encrypthash(password)
 
         
-        base = pd.read_csv('users.csv')
-        print('ok')
-        base = base.append({'username':f'{user_name}', 'user_password':f'{password}' }, ignore_index=True)
-        print(base)
-        base.to_csv('users.csv', index=False, sep='|')          
-        os.mkdir(f"target/{user_name}")
+        connection = get_db()
+        cursor = connection.cursor()
+
+        cursor.execute(f"INSERT INTO users ( user_name, user_password ) VALUES ( '{user_name}', '{password}');")
+        connection.commit()
         return redirect(url_for('strona'))
         # except:
         #     print('baza niedziała')
