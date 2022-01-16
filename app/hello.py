@@ -3,7 +3,8 @@ from flask import Markup
 from flask import (Flask, flash, g, redirect, render_template, request,
                    send_file, session, url_for)
 import os
-import sqlite3
+import pandas as pd 
+
 
 
 
@@ -78,14 +79,14 @@ def load_file(name):
                 composition = f.read()
             return composition
 
-def get_db():
-    """Funkcja tworząca połączenie z bazą danych"""
-    if not g.get('db'):
-        con = sqlite3.connect(app.config['DATABASE'])
+# def get_db():
+#     """Funkcja tworząca połączenie z bazą danych"""
+#     if not g.get('db'):
+#         con = sqlite3.connect(app.config['DATABASE'])
 
-        con.row_factory = sqlite3.Row
-        g.db = con
-    return g.db
+#         con.row_factory = sqlite3.Row
+#         g.db = con
+#     return g.db
 
 
 @app.teardown_appcontext
@@ -138,16 +139,18 @@ def login():
         #===========================================!
 
         enc_login = login
-        db = get_db()
-        kursor = db.execute('SELECT * FROM users WHERE user_name = ?;',
-                            [enc_login])
-        kursor = kursor.fetchone()
+        base = pd.read_csv('users.csv', sep='|')
+        # db = get_db()
+        # kursor = db.execute('SELECT * FROM users WHERE user_name = ?;',
+        #                     [enc_login])
+        # kursor = kursor.fetchone()
+        kursor = base[base['username'] == enc_login]
 
-        if kursor == None:
+        if base[base['username'] == enc_login].empty:
             error = 'wrong login'
             return render_template('login.html', error=error)
 
-        if (savedata.passcomper(password, kursor['user_password'])):
+        if (savedata.passcomper(password, kursor['user_password'].values[0])):
             session['username'] = login
             session['logged'] = True
             return redirect(url_for('strona'))
@@ -217,18 +220,20 @@ def reg():
 
         password = savedata.encrypthash(password)
 
-        try:
-            db = get_db()
-            db.execute('INSERT INTO users VALUES (?,?,?);',
-                        [None, user_name, password])
-            db.commit()
-            os.mkdir(f"target/{user_name}")
-            return redirect(url_for('strona'))
+        
+        base = pd.read_csv('users.csv')
+        print('ok')
+        base = base.append({'username':f'{user_name}', 'user_password':f'{password}' }, ignore_index=True)
+        print(base)
+        base.to_csv('users.csv', index=False, sep='|')          
+        os.mkdir(f"target/{user_name}")
+        return redirect(url_for('strona'))
+        # except:
+        #     print('baza niedziała')
 
-
-        except sqlite3.IntegrityError:
-            flash('such user already exists')
-            return redirect(url_for('reg'))
+        # except sqlite3.IntegrityError:
+        #     flash('such user already exists')
+        #     return redirect(url_for('reg'))
 
     return render_template('reg.html')
 
@@ -238,26 +243,26 @@ def admin():
 
     return render_template('admin.html')
 
-@app.route('/read_db_on_begin', methods=['GET', 'POST'])
-def read_db_on_begin():
-    if 'logged' not in session:
-        session['logged'] = False
-    if not session['logged']:
-        return redirect(url_for('login'))
+# @app.route('/read_db_on_begin', methods=['GET', 'POST'])
+# def read_db_on_begin():
+#     if 'logged' not in session:
+#         session['logged'] = False
+#     if not session['logged']:
+#         return redirect(url_for('login'))
 
-    db = get_db()
-    kursor = db.execute('SELECT * FROM users')
-    kursor = kursor.fetchall()
-    r_db = []
-    lis = []
-    for user in kursor:
+#     db = get_db()
+#     kursor = db.execute('SELECT * FROM users')
+#     kursor = kursor.fetchall()
+#     r_db = []
+#     lis = []
+#     for user in kursor:
 
-        lis.append(user['id'])
-        r_db.append(lis)
-        lis = []
-    session['db'] = r_db
-    session['read'] = True
-    return redirect(url_for('admin'))
+#         lis.append(user['id'])
+#         r_db.append(lis)
+#         lis = []
+#     session['db'] = r_db
+#     session['read'] = True
+#     return redirect(url_for('admin'))
 
 @app.route('/create',  methods=['GET', 'POST'])
 def create():
