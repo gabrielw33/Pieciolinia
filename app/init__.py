@@ -5,9 +5,7 @@ from flask import (Flask, flash, g, redirect, render_template, request,
 import os
 import sqlite3
 
-f = open('SC.txt')
-Sacredcode = str(f.read())
-f.close()
+
 
 app = Flask(__name__)
 
@@ -255,8 +253,6 @@ def read_db_on_begin():
     for user in kursor:
 
         lis.append(user['id'])
-        lis.append(savedata.decryptlog(user['user_name'], Sacredcode))
-        lis.append(user['rights'])
         r_db.append(lis)
         lis = []
     session['db'] = r_db
@@ -343,8 +339,7 @@ def delete():
     if user == '':
         flash('give user name')
         return redirect(url_for('admin'))
-    enc_user = savedata.encryptlog(user, Sacredcode)
     db = get_db()
-    db.execute('DELETE FROM users WHERE user_name = ?;', [enc_user])
+    db.execute('DELETE FROM users WHERE user_name = ?;', [user])
     db.commit()
     return redirect(url_for('admin'))
