@@ -1,0 +1,296 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Pięciolinia - interaktywny edytor muzyczny</title>
+	
+	<link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link href="{{url_for('static', filename='css/style.css')}}" rel="stylesheet">
+	
+	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+	<script src="{{url_for('static', filename='js/editor.js') }}"></script>
+	<script src="{{url_for('static', filename='js/musical.js') }}"></script>
+	
+</head>
+
+<body>
+	<h1>{{user}}</h1>
+	<form role="form" method="POST" id = f1 >
+		<button id="return" name="return" type="submit" >Strona główna</button>
+	</form>
+
+
+  <div class="main">
+    <div class="editor"></div>
+
+	<!-- Play button, tempo, intrument -->
+	<button id="btnPlay">Odtwórz</button>
+	<label for="quantity">Podaj tutaj wartość tempa:</label>
+	<input id="quantity" name="quantity" type="number" value="60" onchange="validateInputTempo()"/> 
+	
+	<label for="instrument">Wybierz instrument</label>
+	<select id="instrument">
+		<option value="piano">Pianino</option>
+		<option value="square">Square</option>
+		<option value="sine">Sine</option>
+		<option value="sawtooth">Sawtooth</option>
+		<option value="triangle">Triangle</option>
+	</select>
+	
+	<button id="btnClear">Wyczyść edytor</button>
+	<p id="demo"></p>
+
+	
+	<!-- Save and load file -->
+	<br/><br/>
+	<button id="btnSave">Pobierz kompozycję</button>
+	
+	<form role="form" method="POST" id = f1 >
+		<button id="melody_b" name="melody" type="submit" value=0 onclick="melody()" >Zapisz kompozycję</button>
+		<input id="filename" name ="filename" type="text" value="kompozycja"/>
+	</form>
+		<br/>
+		<label for="fileLoader">Wczytaj kompozycję z pliku:</label>
+		<input id="fileLoader" type="file" accept=".melody"/>
+		<button id="btnLoad"  >Wczytaj kompozycję</button>
+	
+	<form role="form" method="POST" id = f2>
+
+		
+		
+		<button id="melody_read" name="melody_read" type="submit"  >Wczytaj kompozycję z biblioteki</button>
+		<input id="r_filename" name ="r_filename" type="text" value=""/>
+	</form>
+	
+	
+	
+	
+	
+
+	<!-- Samples-->
+	<br/><br/>
+    <button id="btnLoadSample">Jingle Bells</button>
+	<button id="btnLoadSample2">Wlazł kotek na płotek</button>
+
+  </div>
+  
+  
+  
+	<div class="help-tip">
+		<p>Pianino - dźwięk pianina<br/><br/>
+		Square - głośny syntezator wyszczególniający wysokie tony<br/><br/>
+		Sine - delikatne, ciche brzmienia przypominające ciche cymbałki<br/><br/>
+		Sawtooth - głośny syntezator który nie wzmacnia tak wysokich tonów<br/><br/>
+		Triangle - dźwięki przypominające klawiaturę elektroniczną
+		</p>
+	</div>
+
+	<table>
+		<tr>
+			<th>twoje kompozycje </th>
+			
+			
+		</tr>
+		{% for x in len %}
+		<tr>
+			<td> {{x}} </dr> <br>
+		</tr>
+		{% endfor %}
+
+	</table>
+
+
+
+	<script>
+	
+
+
+	$(document).ready(function() {
+		//initialize editor
+		var notesEditor = $('.editor').editor();
+		var editor = notesEditor.eq(0);
+
+		if('{{flash_message}}' == 'True') {
+			
+			var composition = '{{ melody_content }}';
+
+			//document.getElementById("demo").innerHTML = composition;
+			editor.func('importFromJSONString',composition);
+
+		}
+
+
+		// Playing (musical.js)
+		var inst = new Instrument();
+	
+		$('#btnPlay').click(function() 
+		{
+			var instru = instrument.value;
+			inst.silence();
+			inst.setTimbre({wave:instru});
+			inst.play({tempo:quantity.value}, notesEditor.func('getABC'));
+		});
+
+		//Clear editor
+		$('#btnClear').click(function() 
+		{
+			editor.func('clear');
+		});
+
+		// Load sample melody button
+		$('#btnLoadSample').click(function() 
+		{
+			var melodyJson = '{"meta":{},"notes":['
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":2,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":2,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+			+ '{"element_type":"note","octave":0,"staffSteps":4,"notePos":6,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":7},'
+			+ '{"element_type":"note","octave":0,"staffSteps":0,"notePos":0,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":0},'
+			+ '{"element_type":"note","octave":0,"staffSteps":1,"notePos":1,'
+			+   '"duration":4,"alter":"","dotted":false,"note_id":2},'
+			+ '{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+			+   '"duration":1,"alter":"","dotted":false,"note_id":4}'
+			+ ']}';
+			editor.func('importFromJSONString', melodyJson);
+		});
+		
+		
+		$('#btnLoadSample2').click(function() 
+
+		{	
+			var kot = 
+			'{"meta":{},"notes":['
+				+'{"element_type":"note","octave":0,"staffSteps":4,"notePos":4,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":7},'
+				+'{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+				+'{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+				+'{"element_type":"note","octave":0,"staffSteps":3,"notePos":3,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":5},'
+				+'{"element_type":"note","octave":0,"staffSteps":1,"notePos":1,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":2},'
+				+'{"element_type":"note","octave":0,"staffSteps":1,"notePos":1,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":2},'
+				+'{"element_type":"note","octave":0,"staffSteps":0,"notePos":0,'
+				+   '"duration":8,"alter":"","dotted":false,"note_id":0},'
+				+'{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+				+   '"duration":8,"alter":"","dotted":false,"note_id":4},'
+				+'{"element_type":"note","octave":0,"staffSteps":4,"notePos":4,'
+				+   '"duration":2,"alter":"","dotted":false,"note_id":7},'
+				+'{"element_type":"note","octave":0,"staffSteps":4,"notePos":4,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":7},'
+				+'{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+				+'{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":4},'
+				+'{"element_type":"note","octave":0,"staffSteps":3,"notePos":3,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":5},'
+				+'{"element_type":"note","octave":0,"staffSteps":1,"notePos":1,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":2},' 
+				+'{"element_type":"note","octave":0,"staffSteps":1,"notePos":1,'
+				+   '"duration":4,"alter":"","dotted":false,"note_id":2},'
+				+'{"element_type":"note","octave":0,"staffSteps":0,"notePos":0,'
+				+   '"duration":8,"alter":"","dotted":false,"note_id":0},'
+				+'{"element_type":"note","octave":0,"staffSteps":2,"notePos":2,'
+				+   '"duration":8,"alter":"","dotted":false,"note_id":4},'
+				+'{"element_type":"note","octave":0,"staffSteps":0,"notePos":0,'
+				+   '"duration":2,"alter":"","dotted":false,"note_id":0}'
+				+']}';
+				editor.func('importFromJSONString', kot);
+		});
+
+		
+		
+	
+		//File loading and saving functionality
+		$('#btnSave').click(function() 
+		{
+			var filename = document.getElementById("filename").value;
+			
+			const melody = notesEditor.func('getJSON');
+			const a = document.createElement("a");
+			a.href = URL.createObjectURL(new Blob([JSON.stringify(melody, null, 2)], {
+				type: "application/json"
+			}));
+			a.setAttribute("download", filename + ".melody");
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			//document.getElementById("melody_b").value = melody;
+		});
+
+		$('#melody_b').click(function() 
+		{
+			var filename = document.getElementById("filename").value;
+			
+			const melody = notesEditor.func('getJSON');
+			
+			document.getElementById("melody_b").value = melody;
+		});
+	
+		$('#btnLoad').click(function() 
+	{
+		var file = document.getElementById("fileLoader").files[0];
+		var fileread = new FileReader();
+		fileread.onload = function(e) {
+			var content = e.target.result;
+			var composition = JSON.parse(content);  
+			editor.func('importFromJSONString', composition);
+			
+			// Reset input form and button states
+			document.getElementById('fileLoader').value= null;
+			var button = document.getElementById("btnLoad");
+			button.disabled = true;
+		};
+		fileread.readAsText(file);
+  
+	});
+	
+	//Disable button "btnLoad" when no file is selected
+	document.getElementById("fileLoader").addEventListener("change", function() 
+	{
+		var button = document.getElementById("btnLoad");
+		button.disabled = false;
+	});
+
+});
+
+	//Tempo value validation
+	function validateInputTempo(){
+		var tempoValue = document.getElementById("quantity").value;
+		if(isNaN(tempoValue)){
+			alert(tempoValue + " nie jest liczbą. Przywracam podstawową wartość 60.");
+			document.getElementById("quantity").value=60;
+		}
+		if(tempoValue<=0)
+		{
+			alert("Tempo musi być nieujemne. Przywracam do wartości 30.");
+			document.getElementById("quantity").value=30;
+		}
+		if(tempoValue>200)
+		{
+			alert("Może tak się nie zapędzajmy z tym tempem? Ustawię 150");
+			document.getElementById("quantity").value=150;
+		}
+
+	}
+	</script>
+
+</body>
+</html>

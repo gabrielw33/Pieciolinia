@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{config.SITE_NAME}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styleadmin.css') }}">
+</head>
+<h3>
+    Admin panel
+</h3>
+</head>
+
+<body>
+    <div class ="head">
+        <p>
+            Username: {{ session['username'] }}
+            <br>
+            Rights: {{ session['rights'] }}
+        </p>
+    </div>
+    <div class="head" >
+
+    </div>
+
+    <div class="error">
+        {% for message in get_flashed_messages() %}
+        {{ message }}
+        {% endfor %}
+    </div>
+    <div id="contener">
+
+
+        <div id=Create>
+            <h2>
+                Create new user
+            </h2>
+
+            <form role="form" method="POST" action="{{ url_for('create') }}">
+                <input name="new_user" type="text" placeholder="new user" value='{{ cos }}'><br>
+                <input name="new_password" type="password" placeholder="new password"> <br>
+                <input name="re_password" type="password" placeholder="repeat password"> <br>
+                <input name="rights" type="text" placeholder="Right(CRUD)"> <br>
+
+                <button name="reg" type="submit" class="reg" {{bc}}>Create</button>
+            </form>
+        </div>
+
+        <div id=Update >
+            <h2>
+                Edit user
+            </h2>
+            <form role="form" method="POST" action="{{ url_for('update') }}">
+                <input name="eduser" type="text" placeholder="user name"><br>
+                <input name="name_user" type="text" placeholder="new user name"> <br>
+                <input name="password_user" type="password" placeholder="new password"> <br>
+                <input name="rights" type="text" placeholder="new Rights(CRUD)"> <br>
+                <button name="Edit" type="submit" class="reg" {{ bu }}>Edit</button>
+            </form>
+        </div>
+        <div id=Delete >
+            <h2>
+                Delete user
+            </h2>
+            <form role="form" method="POST" action="{{ url_for('delete') }}">
+                <input name="name_user" type="text" placeholder="username"><br>
+
+                <button id="del" name="del" type="submit" class="reg" {{bd}}>Delete</button>
+            </form>
+        </div>
+
+
+
+
+    </div>
+    <div id=Read >
+        <h2>
+            Show users
+        </h2>
+        <form role="form" method="POST" action="{{ url_for('read') }}">
+            <button name="Show" type="submit" class="reg" {{br}}>Show</button>
+        </form>
+
+
+
+        <table>
+  
+
+        </table>
+
+    </div>
+</body>
+
+</html>

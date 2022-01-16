@@ -6,3 +6,7 @@ itsdangerous
 Jinja2
 MarkupSafe
 Werkzeug
+passlib
+pybase64
+pysqlite3
+requests
